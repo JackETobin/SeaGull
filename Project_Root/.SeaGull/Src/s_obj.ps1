@@ -30,6 +30,7 @@ function Obj_Kill {
 function Obj_Set {
     [OutputType([bool])]
     param( [job] $job_In )
+    if($Settings.verbose -eq $true) { Write-Host($job_In.name + ": building obj files.") }
     if((Dir_Make -dir_In ($job_In.objDir + "\Obj")) -ne $true) {
         if($Settings.verbose -eq $true) { Write-Host "Unable to generate obj directory." }
         return $false

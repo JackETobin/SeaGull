@@ -12,13 +12,19 @@ function Dir_Parse {
     [OutputType([file[]])]
     param ( [string[]] $dir_In )
     $files = New-Object System.Collections.ArrayList
-    (Get-ChildItem -Path $dir_In -Recurse -Include *.c) | ForEach-Object {
-        [file] $file = @{
-            state = "A"
-            dir = $_.FullName;
-            modified = $_.LastWriteTime.ToString()
+    ForEach($dir in $dir_In) {
+        if((Test-Path -Path $dir) -eq $false) {
+            if($Settings.verbose -eq $true) { Write-Host("Directory: " + $dir + " unable to be found") }
+            continue
         }
-        $null = $files.Add($file)
+        (Get-ChildItem -Path $dir -Recurse -Include *.c) | ForEach-Object {
+            [file] $file = @{
+                state = "A"
+                dir = $_.FullName;
+                modified = $_.LastWriteTime.ToString()
+            }
+            $null = $files.Add($file)
+        }
     }
     return [file[]] $files | Sort-Object dir
 }

@@ -29,32 +29,45 @@ function Dispatch_Job {
     $job = Job_Build -config_In $config_In
     if($null -eq $job){ return 1 }
 
+    
+    if($Settings.verbose -eq $true) { Write-Host($job.name + ": dispatching.") }
     $job.source = Contents_CrossRef -job_In $job
     if((Obj_Set -job_In $job) -ne $true) {
         if($Settings.verbose -eq $true) { Write-Host $job.name + ": Unable to assemble .obj files." }
+        if($job.build = [buildType]::LIB) { $null = File_Unblock -name_In $job.name }
         return $false
     }
     $threads = New-Object System.Collections.ArrayList
     $thread = Start-ThreadJob -ScriptBlock {
-        param( $job_In )
+        param( 
+            $job_In, 
+            $settings_In 
+        )
         . ./.SeaGull/Src/s_extern.ps1
         
+        $Global:Settings = $settings_In
         switch( $job_In.build ) {
             EXE { return Extern_Link -job_In $job_In }
             LIB { return Extern_Lib -job_In $job_In }
             default { Write-Host ($job_In.name + ": Unknown build type.") }
         }
+        if($job_In.build = [buildType]::LIB) { $null = File_Unblock -name_In $job_In.name }
         return $false
-    } -Arg ([job] $job)
+    } -Arg ([job] $job, $Settings)
     $null = $threads.Add($thread)
     $thread = Start-ThreadJob -ScriptBlock {
-        param( $job_In )
+        param( 
+            $job_In, 
+            $settings_In 
+        )
         . ./.SeaGull/Src/s_contents.ps1
         
-        return Contents_Write -job_In $job_In
-    } -Arg ([job] $job)
+        $Global:Settings = $settings_In
+        Contents_Write -job_In $job_In
+        return
+    } -Arg ([job] $job, $Settings)
     $null = $threads.Add($thread)
     $res = Receive-Job -Job $threads -Wait -AutoRemoveJob
-    if($res[0] -ne $true -or $res[1] -ne $true) { return $false }
+    if($res -ne $true ) { return $false }
     return $true
 }

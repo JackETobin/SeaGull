@@ -11,15 +11,16 @@ function Contents_Check {
 function Contents_Read {
     [OutputType([file[]])]
     param ( [job] $job_In )
-    [string[]] $contents = File_Read -dir_In ($job_In.objDir + "\contents.txt")
+    $contents = (File_Read -dir_In ($job_In.objDir + "/contents.txt")) | Where-Object{$_ -ne ""}
     if(!$contents) { return $null }
     $files = New-Object System.Collections.ArrayList
     $contents | ForEach-Object {
+        if(!$_) { continue }
         $line = $_.Split("~")
         [file] $file = @{
-            state = $line[0]
-            dir = $line[1]
-            modified = $line[2]
+            state = $line[0].TrimEnd()
+            dir = $line[1].TrimEnd()
+            modified = $line[2].TrimEnd()
         }
         $null = $files.Add($file)
     }
@@ -28,10 +29,11 @@ function Contents_Read {
 
 function Contents_Write {
     param ( [job] $job_In )
+    if($Settings.verbose -eq $true) { Write-Host($job_In.name + ": updating contents file.") }
     if(!$job_In.source) { return $false }
-    $dir = $job_In.objDir + "\contents.txt"
+    $dir = $job_In.objDir + "/contents.txt"
     [System.Collections.ArrayList] $outArray = File_Read -dir_In $dir
-    if(!$outArray) { $outArray = New-Object System.Collections.ArrayList }
+    if($null -eq $outArray) { $outArray = New-Object System.Collections.ArrayList }
     ForEach($src in $job_In.source) {
         if(!$src.state) { continue }
         switch($src.state) {
@@ -57,10 +59,7 @@ function Contents_Write {
             default { continue }
         }
     }
-    if($outArray.Count -gt 0) {
-        File_Write -dir_In $dir -content_In $outArray | Sort-Object
-    }
-    return $true
+    return File_Write -dir_In $dir -content_In $outArray | Sort-Object
 }
 
 function Contents_CheckNew {
@@ -123,6 +122,7 @@ function Contents_CheckOld {
 function Contents_CrossRef {
     [OutputType([file[]])]
     param ( [job] $job_In )
+    if($Settings.verbose -eq $true) { Write-Host($job_In.name + ": checking for source updates.") }
     [file[]] $new
     [file[]] $update
     [file[]] $kill
@@ -130,7 +130,7 @@ function Contents_CrossRef {
     $thread = Start-ThreadJob -OutVariable $new -ScriptBlock {
         param( $job_In )
         . ./.SeaGull/Src/s_contents.ps1
-        
+
         $new = Contents_CheckNew -job_In $job_In
         return $new
     } -Arg ([job] $job_In)

@@ -1,35 +1,40 @@
 function File_Process_Out {
     [OutputType([string[]])]
     param( [string[]] $raw_In )
-    0..($raw_In.Count - 2) | ForEach-Object {
-        if($_ -lt 0) { break }
-        $raw_In[$_] = $raw_In[$_] + ";"
+    $processed = New-Object System.Collections.ArrayList
+    ForEach($item in $raw_In) {
+        if(!$item) { continue }
+        $null = $processed.Add($item.TrimEnd() + ";")
     }
-    return $raw_In
+    return $processed
 }
 
 function File_Write {
+    [OutputType([bool])]
     param( 
         [string] $dir_In,
         [string[]] $content_In
     )
-    if((Test-Path -Path $dir_In) -ne $true) {
+    if((Test-Path -Path $dir_In -PathType Leaf) -ne $true) {
         if($Settings.verbose -eq $true) { Write-Host ("Unable to find directory: " + $dir_In) }
         return $false
     }
-    $write = File_Process_Out -raw_In $content_In
-    Set-Content -NoNewline -Path $dir_In -Value $write
+    if($content_In) {
+        $write = File_Process_Out -raw_In $content_In
+        Set-Content -NoNewline -Path $dir_In -Value $write
+    }
+    return $true
 }
 
 function File_Read {
-    [OutputType([string[]])]
+    [OutputType([System.Collections.ArrayList])]
     param( [string] $dir_In )
     if((Test-Path -Path $dir_In) -ne $true) {
         if($Settings.verbose -eq $true) { Write-Host ("Unable to find directory: " + $dir_In) }
         return $null
     }
     $content = Get-Content -Raw -Path $dir_In
-    if($content) { $content = $content.Split(";") }
+    if($content) { [System.Collections.ArrayList] $content = $content.Split(";") }
     return $content
 }
 

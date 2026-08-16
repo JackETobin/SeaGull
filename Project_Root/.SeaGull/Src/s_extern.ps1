@@ -16,9 +16,11 @@ function Extern_Clang {
 function Extern_Lib {
     [OutputType([bool])]
     param( [job] $job_In )
+    if($Settings.verbose -eq $true) { Write-Host($job_In.name + ": composing static library.") }
     $output = ((Get-Item $PSScriptRoot).Parent.Parent).FullName + $job_In.outDir
     if((Dir_Make -dir_In $output) -ne $true) {
         if($Settings.verbose -eq $true) { Write-Host "Unable to generate necessary directories. Aborting..." }
+        File_Unblock -name_In $job_In.name
         return $false
     }
     $output = $output -replace "[.]", ""
@@ -36,6 +38,7 @@ function Extern_Lib {
 
 function Extern_Link {
     param ( [job] $job_In )
+    if($Settings.verbose -eq $true) { Write-Host($job_In.name + ": linking and outputting executable.") }
     $output = ((Get-Item $PSScriptRoot).Parent.Parent).FullName + $job_In.outDir
     if((Dir_Make -dir_In $output) -ne $true) {
         if($Settings.verbose -eq $true) { Write-Host "Unable to generate necessary directories. Aborting..." }
@@ -47,8 +50,11 @@ function Extern_Link {
     if($output.EndsWith(".exe") -eq $false) { $output = $output + ".exe" }
     $src = Get-ChildItem -Path $Job_In.objDir -Recurse -Include *.o
     if($job_In.waitList) {
+        if($Settings.verbose -eq $true) { 
+            Write-Host($job_In.name + ": Waiting on jobs:")
+            ForEach($item in $job_In.waitList) { Write-Host(" -" + $job_In.waitList) }
+        }
         File_WaitBlock -names_In $job_In.waitList
     }
-    Extern_Clang -src_In $src -flags_In $job_In.flags -link_In $job_In.link -outDir_In $output
-    return
+    return Extern_Clang -src_In $src -flags_In $job_In.flags -link_In $job_In.link -outDir_In $output
 }

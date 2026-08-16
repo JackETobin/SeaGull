@@ -1,6 +1,6 @@
-. ./.SeaGull/Utils/s_utils.ps1
-
+. ./.SeaGull/sea_types.ps1
 [string[]] $results
+
 function Job_Fail {
     param( 
         [string] $field_In,
@@ -62,6 +62,7 @@ function Job_Validate {
 function Job_Build {
     param( [job_config] $config_In )
     
+if($Settings.verbose -eq $true) { Write-Host($config_In.jobName + ": building job.") }
     [job] $job = [job] @{
         name = $config_In.jobName
         build = $config_In.build
@@ -91,10 +92,6 @@ function Job_Build {
         if($flag.StartsWith("-") -eq $false) { $flag = ("-" + $flag) }
         $null = $flags.Add( $flag )
     } $job.flags = $flags
-    if($Settings.verbose -eq $true) {
-        Write-Host "Job composed: "
-        Write-Host ($job | Format-List | Out-String)
-        Write-Host ($job.source | Format-List | Out-String)
-    }
+
     return [job] $job
 }
