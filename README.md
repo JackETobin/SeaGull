@@ -9,7 +9,7 @@ Notes:
 -  It is currently set up to call clang on object and executable creation, and llvm-ar on lib creation.
 -  SeaGull only works on windows at present.
 -  This thing is a perpetual work in progress, I'll continue to refine it as my own requirements evolve.
--  Just copy and paste SeaGull into your project root as is, and delete the README, then you're good to go.
+-  Just copy and paste .SeaGull and sea_config.pst into your project root as is, then you're good to go.
 
 Please take this and tailor it to your own needs if you're interested in using it, it's a crude tool, but it gets the job done consistently and quickly without the overhead of learning C-make or another build system.\
 Please do reach out if you have comments or questions!\
